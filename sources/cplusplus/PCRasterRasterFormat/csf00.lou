@@ -1,0 +1,14 @@
+@Report
+   @Title { Specification of CSF version 2 format and API }
+   @Author { C.G. Wesseling }
+   @Institution {Department of Physical Geography, University of Utrecht}
+   @DateLine { Yes }
+//
+
+@Abstract { 
+Manual of using the CSF API. To be used in combination with the man"/"html
+pages. The appendix contains some implementation details that are
+actually not for public consumption. @B{Please give me some feedback on the
+documentation: are there uncleare sections?, spelling and formatting errors in
+the document and the online pages etc. }
+}

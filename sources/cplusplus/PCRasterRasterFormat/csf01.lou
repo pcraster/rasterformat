@@ -1,0 +1,1014 @@
+#  implement to do:
+#          check on all attributes ONLY in Mopen and Mclose
+#
+# MAX_MAPS
+#
+#
+#
+#
+#
+
+@Section
+@Title{Introduction}
+{@PP
+
+Purpose of the Cross System Format (CSF for short) is a standard binary
+endian neutral format for storing geographical data used by applications in the
+PCRaster package. Other ASCII formats, used in the PCRaster package, 
+such as column files, lookup and score tables are not described here.
+For these formats refer to the PCRaster (version 2) manual.
+In this document, only the two dimensional raster
+format having square cells is described. A binary format for temporal 
+animations of two dimensional raster is currently under development.
+
+@PP
+
+This document describes the meaning of the fields in CSF files and the
+Application Programming Interface (API) for handling CSF files. By 
+providing an API we want to encourage the use of CSF files through the API
+instead getting at the bytes directly. This allows a layer of software (the
+API) that can deal and if neccessary fix things between different versions
+of the format.
+
+@PP
+
+It documents version 2 of the format and API and some compatibility issues for
+version 1.  Some terms now have @I{user names}, as known to them reading the
+PCRaster manual, and @I{internal names}, for programmers, which are the same as
+in version 1. I want to rename most functions in the future to names used in
+the PCRaster manual (Sorry for the inconvience).
+
+@PP
+I start by explaining the structure and various fields of the format,
+although we want to encourage the use of the API. This gives you an idea
+on what is around in a CSF file and then I explain the API functions that
+you can use to manipulate that information.
+
+} # Section Introduction 
+
+@Section
+@Title{Layout of a CSF file}
+{@PP
+
+A CSF file contains 3 parts: headers, raster data and optional
+attributes.  There are 2 headers: a main header that contains
+information necessary for all sorts of geographic data and the raster
+header with fields specific to raster data. Size and location of the
+header fields are given in the appendix. The text in this section should
+be sufficient to use the format through the API described in the rest of
+this document.
+
+@BeginSubSections
+@SubSection
+@Title{Basic types and missing values}
+{@PP
+
+All field and function definitions are in one of the 8 basic csf types plus
+a character type:
+
+@TaggedList
+ @DTI{char} {series of bytes or characters.}
+ @DTI{INT1, INT2 and INT4} {signed integers of 1, 2 or 4 bytes.}
+ @DTI{UINT1, UINT2 and UINT4} {unsigned integers of 1, 2 or 4 bytes.}
+ @DTI{REAL4, REAL8} {floating point (IEEE-754) 4 or 8 bytes.}
+@EndList
+
+All these types are defined by a typedef in the include file of the library.
+
+@PP
+
+The lowest value for signed integers and the highest value for
+unsigned integers are omitted from the valid range. These values are
+called missing values (MV) and have a special meaning in the format.
+They specify a non specified feature or a value of no interest. The two
+floating point types have a bit-pattern (all bits set to 1) that is a NAN
+as their missing value.
+} # basic types
+
+@SubSection
+@Title{Main header}
+{@PP
+
+@TaggedList
+
+@DTI{signature} {Internal field to recognize a CSF file.}
+
+@DTI{version}
+{Version of CSF. Current version is 2. Version 1 files are still
+readable by this API but cannot be created by this API. 
+Minor differences between version 1 and 2 are explained in this document.}
+ 
+@DTI{gisFileId} {Identification field in project context.}
+
+@DTI{projection}
+{Map projection type. Version 1 had 5 different
+projections. In version 2 we only discern between Y increasing
+(PT_YINCT2B=0) and decreasing (PT_YDECT2B=1) from top to bottom. Version
+1 types are automatically converted.}
+
+@DTI{attrTable} {Internal field to find optional attributes.}
+ 
+@DTI{mapType} {This field is 1 if the file describes a raster.}
+ 
+@DTI{byteOrder}
+{Detects binary file compatibility (big versus little endian). This field
+is used by @Code Mopen to determine how the file must be read. @B{VAX, PDP11 and
+other middle endians are not yet supported}}
+
+@EndList
+
+} # SubSection Main Header
+
+@SubSection
+@Title{Raster header}
+{@PP
+
+The fields nrRows, nrCols, cellSize, projection, xUL, yUL and angle describe the exact
+location and area that is covered by the map. These fields are called
+@I{ location attributes}. Figure 1 is an overview of the location attributes.
+
+@PP
+
+-90d @Rotate @IncludeGraphic{"location.eps"}//0.1i
+@B{Fig.1:} Scheme of a maps location attributes.
+
+@PP
+
+@TaggedList
+
+@DTI{nrRows} 
+{Number of rows.}
+
+@DTI{nrCols} 
+{Number of columns.}
+
+@DTI{xUL, yUL (user name: @Eq{x sub {ul}} @Eq{y sub {ul}} ul=UpperLeft)}
+{Co-ordinate for the upper left corner of the map.} 
+
+@DTI{cellSize (user name: cell length)} 
+{Size of cell in x and y direction. In version 1 different sizes could
+be given for the x and y direction. There are still two separate fields
+in the raster header, but they are always set to the same value. If the
+raster is an altitude map then these fields must be in the same units as
+the cell-values, for correct slope and orient calculations (for example,
+both in kilometers or meters but not in the cellSize in kilometers units
+and the dtm cell values in meters).}
+
+@DTI{angle}
+{Counterclockwise rotation angle ( @Eq{ element [ - 1 over 2 pi , 1 over 2 pi]} )
+ of grid with the line @Eq{y = 0}. This field is new in version 2. Version
+ 1 files have an angle of 0.}
+
+
+@DTI{cellRepr (user name: cell representation)}
+{Specifies which of the 8 basic types is used to hold the raster
+data and the minVal and maxVal field. This API (version 2) only supports
+the four types listed below. The other basic types can still be read.
+There a no applications that need to create REAL8 maps at this moment. 
+The REAL8 basic type is however important in the RuseAs function since
+it is the only type that can hold and convert back and forward
+ the other three types with no loss of precision}
+
+
+@LD @Tab
+ @Fmta { @Col @Heading A ! @Col @Heading B}
+ @Fmtb { @Col          A ! @Col          B}
+{
+ @Rowa A{cellrepr} B {user name}
+ @Rowb A{UINT1} B {small integer}
+ @Rowb A{INT4}  B {large integer}
+ @Rowb A{REAL4} B {small real}
+ @Rowb A{REAL8} B {large real}
+} # tab
+
+@DTI{minVal}
+{Value smaller than or equal to the minimum value in raster data. See 
+description of maxVal.}
+
+@DTI{maxVal}
+{Value greater than or equal to the maximum value in raster data.  The
+minVal and maxVal fields are mainly used in programs who needs a
+possible range of values, e.g. for the scalar legend in display. The
+minVal and maxVal fields are of the same type as the raster data. In
+version 1 minVal and maxVal could be missing value. It is highly
+recommended to set minVal and maxVal @B always to  value such that all
+values in the raster should fall between and including minVal and
+maxVal.  If minVal and"/"or maxVal is missing value then an application
+can assume that is a @I{void map}: a map with only missing values. }
+
+@DTI{valueScale (user name: data type)}
+{The version 2 value scales are listed in the paragraph and explained in
+the PCRaster manual. Version 1 types where classified, continuous and
+not determined. Only version 2 types are accepted in the creation of
+maps through the API described here (version 2). Read functions , such
+as RgetValueScale will still return the old types.}
+
+@EndList
+
+} # SubSection Raster Header
+
+@SubSection
+@Title{Raster data}
+{@PP
+The raster data is a stream of cells in the basic type denoted by the cellRepr
+field of raster header of nrCols * nrRows cells containing values or 
+missing values. Interpretation and ranges of the cell values depends on the
+value scale:
+
+@LD @Tab
+ @Fmta { @Col @Heading A ! @Col @Heading B}
+ @Fmtb { @Col          A ! @Col          B}
+{
+ @Rowa A{value scale} B {cell values are:}
+ @Rowb A{classified} B {MV, all integers}
+ @Rowb A{continuous} B {MV, all reals}
+ @Rowb A{boolean}   B {MV, 0, 1}
+ @Rowb A{nominal}   B {MV, all integers}
+ @Rowb A{ordinal}   B {MV, all integers}
+ @Rowb A{scalar}    B {MV, all reals}
+ @Rowb A{direction} B {MV, -1 for no direction, @Eq{ [0,2 pi>}}
+ @Rowb A{ldd} B {MV, integers [1-9]}
+} # tab
+}
+
+@SubSection
+@Title{Optional attributes}
+{@PP
+
+The attributes or fields in the headers are all obligatory. 
+Optional attributes such as color pallettes and legends are appended to
+the end of the file. 
+
+@PP
+
+Optional attributes are identified by an unique number. Every optional attribute 
+can only
+occur once in the file. Attributes defined are (See appendix for details):
+
+@TaggedList 
+
+@DTI{Description}
+{The description is a (short) description of the map. In most cases this is the name of the map. For
+example: """Elevation of the Netherlands""".} 
+
+@DTI{Legend without a name}
+{Version 1 legend. See legend with a name.}
+
+@DTI{Legend with a name}
+{Version 2 legend. A legend has a name, for example 
+"""soil types""" or """ land use""", and an entry for each value that maps a cell
+value to a description.} 
+
+@DTI{History}
+{History describes how the map is created. We recommend to use
+this attribute frequently. If your application creates a map, then use
+the history attribute to identify that the map is created with your
+program. HINT: copy the entire command line (including the program name)
+of your program to this field}
+
+@DTI{Colour Palette}
+{List of red, green and blue intensities.}
+
+@DTI{Grey Palette}
+{List of white intensities.}
+
+@EndList
+
+} # Subsection attributes
+} # Section layout
+
+@Section
+@Title{How to install the library}
+{@PP
+The distribution contains four directories and one file in the
+top directory: 
+@TaggedList 
+@DTI{src}
+{All c-files (.c), csfimpl.h (local include for library compilation only) and
+makefile.tem a template makefile with the correct OBJS definition }
+@DTI{include}
+{csf.h, csfattr.h and csftypes.h: interface files}
+@DTI{man3}
+{All manual pages}
+@DTI{html}
+{All manual pages in Html format. Use the index, 00csf.html or csfindex.html as
+starting point}
+@DTI{htm}
+{All manual pages in Html format with DOS filenames. Use the index, 00csf.htm or csfindex.htm as
+starting point}
+@DTI{csf.ps}
+{this document}
+@EndList
+
+Create a makefile in src:
+@LP
+The makefile must contain all c-files from this directory. and include 
+on of the compilation directives: CPU_BIG_ENDIAN or CPU_LITTLE_ENDIAN. 
+@PP
+For both using and creating the library the CPU_BIG_ENDIAN or
+CPU_LITTLE_ENDIAN preprocessor symbols must be defined (e.g.
+-DCPU_BIG_ENDIAN). However, some cpu's are probed in the MACHINE AND
+OPERATING SYSTEM section of csftypes.h . It is a good idea to read that
+section of csftypes.h first.  The library is strict ANSI C, add the
+appropriate flags for your c-compiler ANSI C compilation.
+
+@PP
+Or without make, create a project file by selecting all c-files from
+this directory and select options to define one of the endian
+preprocessor symbols and set the compiler to ANSI C.
+
+@PP
+Then put the created library in the appropriate place on your system and
+make the manpages (include one directory up of man3 in your MANPATH
+environment variable) and make the include directory visible in your
+programming environment (-I).
+
+} # installing the library
+
+@Section
+@Title{Using this API in programs}
+{@PP
+
+The CSF library is a collection of constants, macro's and functions to
+access CSF files. Here we discuss the contents of the library in thematic
+order. 
+All functions mentioned are documented in the online manual pages.  Many
+manual pages also include some sample code. Note that in case of
+conflicting information between this document and the manual pages, you
+should rely on the manual page for being most up to date.  There are two
+public include files to include in your application: @Code{csf.h
+csftypes.h}. @Code{csf.h} contains the function prototypes and includes
+@Code csftypes.h . @Code csftypes.h contains only typedefs and constants
+(e.g. @Code{UINT1 MV_UINT1}).
+
+@PP
+All public functions are prefixed by either M or R. M-functions, for
+example @Code Mopen, are for generic map handling, the R-functions, for
+example @Code RgetRow, are specific for raster functions. In addition
+there are functions, typedefs and constants prefixed by CSF. The 
+CSF-prefixed symbols are  only for internal use in the library and do
+not belong to the API.
+
+@BeginSubSections
+@SubSection
+@Title{Error handling}
+{@PP
+
+Functions available for error handling are:
+
+@TaggedList 
+
+@DTI{Mperror}
+{Write short error message associated with current Merrno value to stderr.}
+@DTI{MperrorExit}
+{Write short error message associated with current Merrno value to stderr and exits.}
+@DTI{MstrError}
+{Returns error message associated with current Merrno value.}
+@DTI{ResetMerrno}
+{Reset Merrno variable to NO_ERROR.}
+
+@EndList
+
+Many functions in the library set the global variable @Code Merrno
+(analog to @Code errno from the C library) to a value unequal to zero
+in case of an error. This value gives further information about the most
+recent error. At program initialization, Merrno is set to 0 (NO_ERROR).
+In most of the manual pages there is a section MERRNO that lists the
+possible constants set by a specific function in case of an error.
+There is no garanty that Merrno is always set in case every possible
+error, but many error conditions specific to using this API are checked.
+The library source code error checks are extensive in those areas where
+improper parameters could create a map that would make no sense to other
+applications.
+
+The constants are:
+
+@PP
+
+@TaggedList 
+
+@DTI{@Code NOERROR}
+{No error occured.}
+@DTI{@Code OPENFAILED}
+{File could not be opened or does not exist}
+@DTI{@Code NOT_CSF}
+{File is not a C.S.F.-file}
+@DTI{@Code BAD_VERSION}
+{Wrong C.S.F.-version}
+@DTI{@Code BAD_BYTEORDER}
+{Wrong byte order. Should not occur}
+@DTI{@Code NOCORE}
+{Not enough memory to allocate run time structures.}
+@DTI{@Code BAD_CELLREPR}
+{Illegal cell representation constant}
+@DTI{@Code NOACCESS}
+{Access denied. This can happen if the file is set read only on
+the file system and you want to open it for writing or if you have opened
+the file read only and you want to write something.}
+@DTI{@Code ROWNR2BIG}
+{The specified row number exceeds the number of rows in the map.}
+@DTI{@Code COLNR2BIG}
+{The specified column number exceeds the number of columns in the map.}
+@DTI{@Code NOT_RASTER}
+{Map is not a raster file but another CSF type.  The function you have
+used is specific to a raster file.}
+@DTI{@Code BAD_CONVERSION}
+{Illegal conversion. Only used in version 1. Version 2 cell
+representation can always be converted.}
+@DTI{@Code NOSPACE}
+{No space on device to write the file. The functions that create a
+map, allocate disk space enough space for the whole map.}
+@DTI{@Code WRITE_ERROR}
+{A write error occurred. Note that read and write errors can always
+occur, especially in network environments.}
+@DTI{@Code ILLHANDLE}
+{Illegal handle. You are passing a map handle that is not returned
+from @Code Mopen , @Code Rcreate or @Code Rdup . Not checked by all functions, will be removed
+entirely someday.}
+@DTI{@Code READ_ERROR}
+{A read error occurred. Note that read and write errors can always
+occur, especially in network environments. }
+@DTI{@Code BADACCESMODE}
+{Illegal access mode constant.}
+@DTI{@Code ATTRNOTFOUND}
+{Optional attribute not found.}
+@DTI{@Code ATTRDUPL}
+{Optional attribute already in file.}
+@DTI{@Code ILL_CELLSIZE}
+{The specified cell size is smaller or equal to 0.}
+@DTI{@Code CONFL_CELLREPR}
+{Conflict between cell representation and value scale. See CW page 5 or 
+the manual page of @Code Rcreate .}
+@DTI{@Code BAD_VALUESCALE}
+{Illegal value scale.}
+@DTI{@Code BAD_ANGLE}
+{Angle must be @Eq{element [0, 2 pi>}.}
+@DTI{@Code CANT_USE_AS_BOOLEAN}
+{Can't read as a boolean map. See manual page of @Code RuseAs .}
+@DTI{@Code CANT_USE_WRITE_BOOLEAN}
+{Can't write as a boolean map. See manual page of @Code RuseAs .}
+@DTI{@Code CANT_USE_WRITE_LDD}
+{Can't write as a ldd map. See manual page of @Code RuseAs .}
+@DTI{@Code CANT_USE_AS_LDD}
+{Can't use as a ldd map. See manual page of @Code RuseAs .}
+@DTI{@Code CANT_USE_WRITE_OLDCR}
+{Can't write to version 1 cell representation. See manual page of @Code RuseAs .}
+@DTI{@Code ILLEGAL_USE_TYPE}
+{The usetype argument of RuseAs  is not version 2 cell representation,
+VS_LDD or VS_BOOLEAN.}
+
+@EndList
+
+} # subsection error handling
+
+@SubSection
+@Title{Creating, opening and closing maps}
+{@PP
+
+A map can be accessed by a map handle which is anolog to the file pointer
+ (@Code{FILE *}) file in C. This map handle is returned by the functions:
+
+@TaggedList 
+ @DTI{@Code Mopen} {Open an existing CSF file.}
+ @DTI{@Code Mclose}
+{@Code Mclose closes a map. This function is automatically called,, if
+the program is terminated with the @Code exit function or at the end of
+the @Code main function just as in fclose, if the map is not yet closed at that point.}
+ @DTI{@Code Rcreate} {Create a new CSF raster file.}
+ @DTI{@Code Rdup} {Create a new map by cloning another one.}
+@EndList
+
+Constants defined and used in @Code Rcreate and @Code Rdup arguments are
+(See also @Code RdefaultCellRepr ):
+@Tab
+ @Fmta { @Col @Heading A ! @Col @Heading B ! @Col @Heading C} 
+ @Fmtb { @Col          A ! @Col          B ! @Col C }
+{
+ @Rowa A{value scale} B {default cellRepr} C {possible cellRepr}
+ @Rowb A{@Code{VS_BOOLEAN}}   B {@Code{CR_UINT1}} C {@Code{CR_UINT1}}
+ @Rowb A{@Code{VS_NOMINAL}}   B {@Code{CR_INT4}}  C {@Code{CR_UINT1 CR_INT4}}
+ @Rowb A{@Code{VS_ORDINAL}}   B {@Code{CR_INT4}}  C {@Code{CR_UINT1 CR_INT4}}
+ @Rowb A{@Code{VS_SCALAR}}    B {@Code{CR_REAL4}} C {@Code{CR_REAL4 (CR_REAL8)}}
+ @Rowb A{@Code{VS_DIRECTION}} B {@Code{CR_REAL4}} C {@Code{CR_REAL4 (CR_REAL8)}}
+ @Rowb A{@Code{VS_LDD}}       B {@Code{CR_UINT1}} C {@Code{CR_UINT1}}
+} # tab
+@PP
+Projection type constants: @Code{PT_YINCT2B PT_YDECT2B}.
+
+} # SubSection create and open maps
+
+@SubSection
+@Title{Reading and writing cells}
+{@PP
+
+Most applications are designed to  process raster data in
+one cell representation. For example, a drape program is programmed
+to keep the dtm-data in either REAL4 or REAL8 but not both. Or a program
+that reads some nominal maps to create a new nominal map is programmed
+to use the largest type (INT4), of the two cell representations valid for 
+nominal maps (UINT1 or INT4), but write the output map as UINT1 if the
+input maps are UINT1. 
+
+@PP
+
+After opening or creating a map and before reading or writing any cells
+one can use the @Code RuseAs function to change the cell representation
+the application will use for a map. After a call to @Code RuseAs we
+speak about the @I{in-file (or file) cell representation} and the
+@I{application (or app) cell representation}. The application cell
+representation is the one set by @Code RuseAs. The file cell representation
+is returned by @Code RgetCellRepr . If @Code RuseAs is not used then the file
+and application cell representation are indentical. 
+When calling a get (= read)
+function, the get function will read the cells and convert them to the
+application cell representation.  When calling a put (= write) function it
+is the other way round, the put function will first convert the cells
+ to the in-file cell representation and then write them to the file.
+@Code RuseAs also affects @Code RputMinVal , @Code RputmaxVal ,
+@Code RgetMinVal and @Code RgetMaxVal in a similar fashion.
+The REAL8 basic type is very useful in the RuseAs function since
+it is the only type that can hold and convert back and forward
+the other three types (UINT1, INT4, REAL4) with no loss of precision.
+Although, promotion from a REAL4 to REAL8 can add superficial precision. 
+# For example CW check LISEM/TEST.
+But converting back to REAL4 will get you the exact same number you
+started with (assuming the compiler and"/"or CPU conforms to a strict IEEE-754
+implementation).
+
+@PP
+
+Conversion between any version 2 type (UINT1, INT4, REAL4 and REAL8) is
+possible. In read-only mode (e.g. @Code{Mopen(..., M_READ)} ) 
+conversion from a type 1
+(INT1,INT2,UINT2,UINT4) to a type 2 is possible. In addition to the cell
+representations constants (CR_UINT1, ..., CR_REAL8) one can pass the
+value scales VS_LDD and VS_BOOLEAN to @Code RuseAs. The conversion
+routines then installed will convert a version 1 map to an ldd if
+possible (by taking @I{value modulo 10}) or any type (except direction and
+ldd) to a boolean (by testing @I{not equal to 0}). However the ldd is not
+repaired (See PCRaster manual).
+# (See [@Ref{cmodel}] for compatibility rules).
+
+@PP
+
+@B IMPORTANT: Since the memory size of the cell representation types
+differ, the buffer for reading or writing cells must be big enough to
+hold the requested number of cells in both the in-file and the
+application cell representation type. @Code Rmalloc allocates a buffer
+that is large enough to hold the both of them.
+
+@PP
+
+@B IMPORTANT: Due to endian handling (byte swapping) and a difference
+between in-file and application cell representation, the buffers of the
+Rput-functions can be invalidated on return. To be save, programmers
+should assume that these buffers contain crap after calling a
+Rput-function that do not have the const qualifier in their buffer
+argument specification.  Or, in special cases, use the function @Code
+RputDoNotChangeValues to check for this behaviour.
+
+@TaggedList 
+ @DTI{@Code{RgetCell}} {Read one cell.}
+ @DTI{@Code{RgetRow}} {Read one row.}
+ @DTI{@Code{RgetSomeCells}} {Read a stream of cells.}
+ @DTI{@Code{RputCell}} {Write one cell.}
+ @DTI{@Code{RputRow}} {Write one row.}
+ @DTI{@Code{RputSomeCells}} {Write a stream of cells.}
+ @DTI{@Code{RputAllMV}} {Write missing value to all cells.}
+@EndList
+
+} # SubSection reading and writing cells.
+
+@SubSection
+@Title{Handling missing values}
+{@PP
+
+For integer cell types there are the constants, MV_UINT1 and MV_INT4,
+that can be used as missing value. For floating point cell types there
+are no constants, because the missing values is not a valid floating
+point number. The following macros are defined instead:
+
+@TaggedList 
+@DTI{@Code{IS_MV_REAL4(x) IS_MV_REAL8(x)}}
+ {Test if x is pointer to that type of missing value.}
+@DTI{@Code{SET_MV_REAL4(x) SET_MV_REAL8(x)}}
+ {Set space pointed to by pointer x to that type of missing value.}
+@DTI{@Code{COPY_REAL4(dest,src) COPY_REAL8(dest,src)}}
+ {Copy one cell pointed to by src to cell pointed to by dest. This
+macro may be necessary since an assignment like @Code{dest = src} may
+not work because @Code{src} can be a NAN (MV). }
+@EndList
+
+All the functions, manipulating missing values work on memory locations, not
+on file or raster locations:
+
+@TaggedList
+ @DTI{@Code{IsMV IsMVcellRepr}} {Test if a value is missing value.}
+ @DTI{@Code{SetMV SetMVcellRepr}} {Set a memory location to a missing value.}
+ @DTI{@Code{SetMemMV}} {Set an array of cells to missing value.}
+@EndList
+
+} # sub section MV
+
+@SubSection
+@Title{Setting the minimum and maximum in the header}
+{@PP
+
+By default the header minimum and maximum (which can be different from
+the true minimum and maximum) are set to the smallest and largest value
+written by the put-functions.  The resulting maximum and minimum values
+can be wrong if the application writes some cells more than once. To
+correct this, keep track of the minimum and maximum value yourself and
+use the functions @Code RputMinVal and @Code RputMaxVal after all the
+updates of the map.
+
+@PP
+
+@TaggedList
+@DTI{@Code{RdontTrackMinMax}}
+{Disable automatic tracking of minimum and maximum value.} 
+@DTI{@Code{RgetMaxVal}}
+{Get maximum cell value.}
+@DTI{@Code{RgetMinVal}}
+{Get minimum cell value.}
+@DTI{@Code{RputMaxVal}}
+{Set new maximum cell value.}
+@DTI{@Code{RputMinVal}}
+{Set new minimum cell value.}
+@EndList
+
+Note that these functions are also affected by @Code RuseAs. But they have 
+a local buffer to hold the in-file cell representation.
+
+} # subsection min/max
+
+@SubSection
+@Title{value scale}
+{@PP
+
+The version 1 value scales (VS_CONTINUOUS, VS_CLASSIFIED) can be compatible 
+with the version 2 scales: VS_BOOLEAN, VS_NOMINAL, VS_ORDINAL VS_SCALAR,
+VS_DIRECTION and VS_LDD. VS_UNDEFINED is a special value that is guaranteed
+not to have the value of another defined value scale constant.
+@Code RvalueScaleIs tests if the value scale of
+a map is compatible with some version 2 scale.
+@Code RputValueScale writes a new value scale.
+@Code RgetValueScale returns the maps value scale, which can be a version 1 scale.
+@Code RvalueScale2 test if a value scale is a version 2 scale.
+@Code RstrValueScale returns the user name of a value scale.
+@Code RgetValueScaleVersion returns the version number of a value scale.
+} # sub section value scale
+
+@SubSection
+@Title{location attributes}
+{@PP
+
+The location attributes number of rows and columns are fixed
+after map creation, the other location attributes can be changed.
+
+@TaggedList 
+ @DTI{@Code{MgetProjection MputProjection}} {}
+ @DTI{@Code{RgetAngle RputAngle}} {}
+ @DTI{@Code{RgetCellSize RputCellSize}} {}
+ @DTI{@Code{RgetXUL RgetYUL RputXUL RputYUL}} {}
+ @DTI{@Code{RgetNrCols RgetNrRows}} {}
+@EndList
+
+} # subSection location attributes
+
+@SubSection
+@Title{Other header attributes}
+{@PP
+
+@TaggedList 
+ @DTI{@Code{MgetDataType}} {Data type of the map}
+ @DTI{@Code{MgetGisFileId MputGisFileId}} {Gis file id}
+ @DTI{@Code{MgetVersion}} {Get CSF version.}
+ @DTI{@Code{RgetCellRepr}} {Get (in-file) cell representation.}
+@EndList
+
+} # SubSection{Other header attributes}
+
+@SubSection
+@Title{Co-ordinate conversion}
+{@PP
+
+In the library, raster cells are addressed by their row and column
+number where (row,col) = (0,0) while the raster is a representation of
+some geographic area defined by the location attributes. The following
+functions can convert between the raster and the (true world) geographic
+area:
+
+@TaggedList 
+ @DTI{@Code{Rcoords2RowCol RgetRowCol}}
+ {Convert true world co-ordinate to a row, column index.}
+ @DTI{@Code{RgetCoords RrowCol2Coords}}
+ {Convert row, column index to a true world co-ordinate.}
+@EndList
+
+} # Subsection co-ordinate
+
+@SubSection
+@Title{miscellaneous functions, macros and constants}
+{@PP
+
+@TaggedList
+@DTI{@Code{MgetFileName}}
+{File name associated with map.}
+@DTI{@Code{MnativeEndian}}
+{Test if map is in the same endian format as the current program.}
+@DTI{@Code{Rcompare}}
+{Compare 2 maps for their location attributes.}
+@DTI{@Code{LOG_CELLSIZE(t) CELLSIZE(t) CSFSIZEOF(n,t)}}
+{Three handy macros. Argument t is one of the cell representation
+constant values (e.g. CR_UINT1). They return, the (@Eq{ sup 2  log}) size
+of type t in bytes and the size in bytes of an n-element array of type t.
+The all return a type of @Code{size_t} }
+@DTI{@Code{VS_UNDEFINED, PT_UNDEFINED, CR_UNDEFINED}}
+{Constants that are garantueed to have a value not equal to a defined
+value of that attribute class. They should @B NEVER be written to a map. Just
+handy for some programming constructs.}
+@DTI{@Code{UINT1_MIN UINT1_MAX INT4_MIN ... etc}}
+{minimum and maximum values, note that REAL?_MIN are the smallest number
+larger than zero (just as FLT_MIN and DBL_MIN)}
+@DTI{@Code{RstrCellRepr RstrValueScale}}
+{return the user name of these attributes}
+@EndList
+} # subSection misc.
+
+@SubSection
+@Title{Using optional attributes}
+{@PP
+
+There are two generic functions for optional attributes: 
+@Code{MattributeAvail} and @Code{MdelAttribute}.
+For each specific attribute there is a group of functions:
+
+@TaggedList
+ @DTI{@Code{MgetNrLegendEntries MgetLegend MputLegend}}{}
+ @DTI{@Code{MgetHistorySize MgetHistory MputHistory}}{}
+ @DTI{@Code{MgetDescriptionSize MputDescription MgetDescription}}{}
+ @DTI{@Code{MgetNrColourPaletteEntries MputColourPalette MgetColourPalette}}{}
+ @DTI{@Code{MgetGreyPalette MgetNrGreyPaletteEntries MputGreyPalette}}{}
+@EndList
+
+} # subSection opt. attr.
+
+@SubSection
+@Title{Obsolete and changed functions from version 1 to 2}
+{@PP
+
+This is a list functions that are superseded by other functions. The new
+functions are also given. In addition to this list, a number of function
+names
+are changed from R-functions to M-functions. For example MputLegend was
+RputLegend in version 1.
+
+@ID @Tab
+ @Fmta { @Col @Heading A ! @Col @Heading B}
+ @Fmtb { @Col          A ! @Col          B}
+{
+ @Rowa A{old function} B {what happened to it?}
+ @Rowb A{@Code{Rcreate}} B{Arguments are changed}
+ @Rowb A{@Code{Rdup}} B{Arguments are changed}
+ @Rowb A{@Code{RreadAs}} B{replaced by @Code RuseAs}
+ @Rowb A{@Code{RputCellSizeX}} B{replaced by @Code RputCellSize}
+ @Rowb A{@Code{RputCellSizeY}} B{replaced by @Code RputCellSize}
+ @Rowb A{@Code{RgetCellSizeX}} B{replaced by @Code RgetCellSize}
+ @Rowb A{@Code{RgetCellSizeY}} B{replaced by @Code RgetCellSize}
+ @Rowb A{@Code{_Rput...}} B{replaced by Rput... }
+ @Rowb A{@Code{_Rget...}} B{replaced by Rget... }
+} # tab
+} # Sub section version 1 stuff
+
+# DetMinMaxINT1 \- determines new minimum and new maximum
+# DetMinMaxINT2 \- determines new minimum and new maximum
+# DetMinMaxINT4 \- determines new minimum and new maximum
+# DetMinMaxREAL4 \- determines new minimum and new maximum
+# DetMinMaxREAL8 \- determines new minimum and new maximum
+# DetMinMaxUINT1 \- determines new minimum and new maximum
+# DetMinMaxUINT2 \- determines new minimum and new maximum
+# DetMinMaxUINT4 \- determines new minimum and new maximum
+# UnloadMap \- remove map from run time structure (LIBRARY_INTERNAL)
+# WriteAttrBlock \- write an attribute control block (LIBRARY_INTERNAL)
+# SetMapAngleCosSin \- set the map angle cosine and sin in header (LIBRARY_INTERNAL)
+# ReadAttrBlock \- read attribute control block (LIBRARY_INTERNAL)
+# RegisterMap \- put map in run time structure (LIBRARY_INTERNAL)
+# GetAttrBlock \- get the attribute control block (LIBRARY_INTERNAL)
+# GetAttrIndex \- search attribute index in block (LIBRARY_INTERNAL)
+# GetVarType \- perform a simple byte-copy of 8,4,2 or 1 byte (LIBRARY_INTERNAL)
+# IsBootedCsfKernel \- check if the kernel is booted (LIBRARY_INTERNAL)
+# IsValidMap \- check if the map handle is created via the csf kernel (LIBRARY_INTERNAL)
+# BootCsfKernel \- boot the CSF runtime library (LIBRARY_INTERNAL)
+# CsfDummyConversion \- dummy conversion (LIBRARY_INTERNAL)
+
+} # Section CSF programs
+
+@Appendix
+@Title{Layout of the file}
+{@PP
+
+This appendix contains a precise definition of the file-format.
+
+@PP
+
+The position in bytes, from the start of the file, of the format parts
+are:
+
+@ID @Tab
+ @Fmta { @Col @Heading A ! @Col @Heading B}
+ @Fmtb { @Col          A ! @Col          B}
+{
+ @Rowa A{part name} B{position}
+ @Rowb A{main header} B{0}
+ @Rowb A{raster header} B{64}
+ @Rowb A{raster data} B{256}
+ @Rowb A{optional attributes} 
+       B{256+(nrRows*nrCols*sizeof(cell representation))}
+}
+
+The gaps between the main and the raster header and the raster header and
+raster data were undefined in version 1, they contained garbage. From
+version 2 on they contain zero valued bytes.
+
+@PP
+
+Contents main header:
+
+@ID @Tab
+ @Fmta { @Col @Heading A ! @Col @Heading B ! @Col @Heading C}
+ @Fmtb { @Col          A ! @Col          B ! @Col @CC     C}
+{
+ @Rowa A{field name} B{type} C{position}
+ @Rowb A{signature}  B{32 char} C{0}
+ @Rowb A{version}    B{UINT2}  C{32}
+ @Rowb A{gisFileId}  B{UINT4}  C{34}
+ @Rowb A{projection} B{UINT2}  C{38}
+ @Rowb A{attrTable}  B{UINT4}  C{40}
+ @Rowb A{dataType}   B{UINT2}  C{44}
+ @Rowb A{byteOrder}  B{UINT4}  C{46}
+}
+
+At creation there is a 1 written to the byteOrder field. If an 
+@I {other endian} proccessor reads this field then the value
+will read 0x01000000 and knows that it has to swap the file contents.
+
+@PP
+
+Contents raster header:
+@ID @Tab
+ @Fmta { @Col @Heading A ! @Col @Heading B ! @Col @Heading C}
+ @Fmtb { @Col          A ! @Col          B ! @Col @CC     C}
+{
+ @Rowa A{field name} B{type} C{position}
+ @Rowb A{valueScale} B{UINT2}  C{64}
+ @Rowb A{cellRepr} B{UINT2}  C{66}
+ @Rowb A{minVal} B{8 char}  C{68}
+ @Rowb A{maxVal} B{8 char}  C{76}
+ @Rowb A{xUL} B{REAL8}  C{84}
+ @Rowb A{yUL} B{REAL8}  C{92}
+ @Rowb A{nrRows} B{UINT4}  C{100}
+ @Rowb A{nrCols} B{UINT4}  C{104}
+ @Rowb A{cellSizeX} B{REAL8}  C{108}
+ @Rowb A{cellSizeY} B{REAL8}  C{116}
+ @Rowb A{angle} B{REAL8}  C{124}
+}
+ 
+Note that minVal and maxVal can hold any type of value depending on the
+cell representation type. Angle is not defined in version 1. The API returns
+0 as the angle for version 1 maps.
+
+@Comment {
+# CONFIDENTIAL
+@PP
+
+The version 2 constants for the value scale are chosen unique from the
+cell representations, because @Code RuseAs can accept both. 
+
+ The high nibble is just a pattern to make it unique. In the low nibble
+ bits the following characteristics are encoded:
+ @TaggedList
+@DTI{bit 0-2} {@Eq{sup 2 log} of maximum cell representation.}
+ @DTI{bit 3} {Is a floating point.}
+ @DTI{bit 0-2} {Has two possible cell representations.}
+ @DTI{bit 2} {Is a vector.}
+@EndList
+@ID @Tab
+ @Fmta { @Col @Heading A ! @Col @Heading B ! @Col @Heading C ! @Col @Heading D}
+ @Fmtb { @Col          A ! @Col          B ! @Col         C  ! @Col  D}
+{
+ @Rowa A{constant}    B{3 2 1 0} C{hex value} D{dec value}
+ @Rowa A{constant}    B{3 2 1 0} C{hex value} D{dec value}
+ @Rowb A{VS_BOOLEAN}  B{0 0 0 0} C{0x00E0} D{224}
+ @Rowb A{VS_NOMINAL}  B{0 0 1 0} C{0x00E2} D{226}
+ @Rowb A{VS_ORDINAL}  B{0 0 1 0} C{0x00F2} D{242}
+ @Rowb A{VS_SCALAR}   B{1 0 1 1} C{0x00EB} D{235}
+ @Rowb A{VS_DIRECTION}B{1 0 1 1} C{0x00FB} D{251}
+ @Rowb A{VS_LDD}      B{0 0 0 0} C{0x00F0} D{240}
+ @Rowb A{VS_VECTOR}   B{1 1 0 0} C{0x00EC} D{236}
+ @Rowb A{VS_NOTDETERMINED} B{version 1} C{} D{0}
+ @Rowb A{VS_CLASSIFIED} B{version 1} C{} D{1}
+ @Rowb A{VS_CONTINUOUS} B{version 1} C{} D{2}
+}
+
+The cell representation are constructed in a similar way: 
+ @TaggedList
+ @DTI{bit 0-1} {@Eq{sup 2 log} of the size in bytes}
+ @DTI{bit 2} {Is signed integer.}
+ @DTI{bit 3} {Is floating point.} 
+ @DTI{bit 4-5} {@Eq{sup 2 log} of the size in bytes
+ that have to be tested to determine a missing value.}
+ @DTI{bit 6-7} {Test displacements on little endian (Intel) proccessors in words.}
+@EndList
+Resulting in the following id's:
+@ID @Tab
+  @Fmta { @Col @Heading A ! @Col @Heading B ! @Col @Heading C ! @Col @Heading D}
+  @Fmtb { @Col          A ! @Col          B ! @Col         C  ! @Col          D}
+{
+  @Rowa A{constant} B{76 54 3 2 10} C{hex value}         D{dec. value}
+  @Rowb A{CR_INT1}  B{00 00 0 1 00} C{0000 0100 = 0x0004} D{4}
+  @Rowb A{CR_INT2}  B{00 01 0 1 01} C{0001 0101 = 0x0015} D{21}
+  @Rowb A{CR_INT4}  B{00 10 0 1 10} C{0010 0110 = 0x0026} D{38}
+  @Rowb A{CR_UINT1} B{00 00 0 0 00} C{0000 0000 = 0x0000} D{0}
+  @Rowb A{CR_UINT2} B{00 01 0 0 01} C{0001 0001 = 0x0011} D{17}
+  @Rowb A{CR_UINT4} B{00 10 0 0 10} C{0010 0010 = 0x0022} D{34}
+  @Rowb A{CR_REAL4} B{01 01 1 0 10} C{0101 1010 = 0x005A} D{90}
+  @Rowb A{CR_REAL8} B{11 01 1 0 11} C{1101 1011 = 0x00DB} D{219}
+ }
+
+}
+# END CONFIDENTAIL COMMENT
+
+} # layout
+
+@Appendix
+@Title{Optional attributes}
+{@PP
+
+The list of optional attributes is implemented by a chain of attribute
+control blocks. Each block contains 10 attribute descriptors and a file
+pointer to the next attribute control block. The file pointer to the
+first block is stored in the field attrTable of the main header. A file
+pointer of 0 means that there are no more attribute control blocks. An
+attribute descriptor has 3 fields:
+
+@TaggedList 
+ @DTI{UINT2 attrId} {Attribute identifier.}
+ @DTI{UINT4 attrOffset} {File pointer to attribute.}
+ @DTI{UINT4 attrSize} {Size of attribute in bytes.}
+@EndList
+
+The field attrId can have two special values. A value of 0 means that
+the space pointed to by attrOffset of size attrSize is no longer used.
+A value of 1023 (0xFFFF) means that the previous attribute descriptor
+was the last one (1023 is a design flaw, it should have been 0xFFFFFFFF,
+but we stick with 1023).
+
+@PP
+
+Note that two empty holes in the attribute area are never merged in
+the current implementation. 
+
+@PP
+
+The attributes defined are defined as: 
+
+@TaggedList 
+@DTI{Description, id = 5} {C-string of variable length}
+@DTI{Legend without a name, id = 1} {Array of an INT4 class value 
+followed by a C-string in a 60-byte array}
+@DTI{Legend with a name, id = 6} {Same as legend without a name, 
+but the first entry contains the name in the string (at least an empty string)
+(See @Code{RgetNrLegendEntries RgetLegend RputLegend}).}
+@DTI{History, id = 2} {C-string of variable length}
+@DTI{Colour Palette, id = 3} {Array of 3 UINT2 items defining the 
+intensity of Red, Green and Blue}
+@DTI{Grey Palette, id = 4} {Array of UINT2 defining the 
+intensity of White (0 is black)}
+@EndList
+
+@PP
+
+For the implementation of the Motif based display we once made the
+following implementation decisions concerning colour picking.
+
+@PP
+
+@B {Classified maps}:
+The first entry specifies colour of class value 0, the second entry for
+class value 1 and so on. Class values that cannot be used as an index in
+the palette (such as -1 or a value greater or equal the palette size
+should be displayed in another colour than the colours than are used
+from the palette. So if the palette contains 12 colours and the map
+contains the values 0,1,2,3 and 15 one can pick any palette entry larger
+than 4 for class 15 or choose another colour as long it is very distinct
+from palette entries 0,1,2 and 3.
+
+@PP
+@B {Continuous maps}:
+The entry for value X is computed as floor((X-minVal)"/"(maxVal-minVal)*P)
+where P are the number of entries in the palette. The palette must be
+sampled at regular intervals if the palette size exceeds the number of
+colours that can be displayed simultaneously on the output device.
+ 
+} # section opt. attributes
