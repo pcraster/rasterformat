@@ -2,14 +2,5 @@
 
 export CDPATH="$CDPATH:$RASTERFORMAT/sources/cplusplus"
 
-if [ $OSTYPE == "cygwin" ]
-then
-  export CMAKE_MODULE_PATH="$CMAKE_MODULE_PATH;`cygpath -m $RASTERFORMAT/environment/templates/cmake`"
-elif [ $OSTYPE == "linux-gnu" ]
-then
-  export CMAKE_MODULE_PATH="$CMAKE_MODULE_PATH;$RASTERFORMAT/environment/templates/cmake"
-elif [ $OSTYPE == "darwin9.0" ]
-then
-  export CMAKE_MODULE_PATH="$CMAKE_MODULE_PATH;$RASTERFORMAT/environment/templates/cmake"
-fi
+export CMAKE_MODULE_PATH="$CMAKE_MODULE_PATH;`nativePath.sh $RASTERFORMAT/environment/templates/cmake`"
 
