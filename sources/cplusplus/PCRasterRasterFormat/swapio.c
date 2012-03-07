@@ -55,6 +55,9 @@ int CsfValidSize(size_t size)
 static void Swap1(unsigned char *buf,  size_t n)
 {
 	/* do nothing */
+  /* Shut up C compiler. */
+  (void)buf;
+  (void)n;
 }
 
 static void Swap2(unsigned char *b,  size_t n)

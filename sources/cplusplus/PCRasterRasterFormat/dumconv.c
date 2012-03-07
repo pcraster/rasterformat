@@ -62,4 +62,7 @@ void CsfDummyConversion(
 	void   *buf)
 {
 	/* nothing */
+  /* Shut up the C compiler */
+  (void)nrCells;
+  (void)buf;
 }
