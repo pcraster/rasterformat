@@ -73,3 +73,4 @@ SET(SOURCES
 ADD_LIBRARY(PCRasterRasterFormat
   ${SOURCES}
 )
+

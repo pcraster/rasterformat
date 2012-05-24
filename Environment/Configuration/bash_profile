@@ -1,6 +1,5 @@
 #vim:syntax=bash
 
-export CDPATH="$CDPATH:$RASTERFORMAT/sources/cplusplus"
-
-export CMAKE_MODULE_PATH="$CMAKE_MODULE_PATH;`nativePath.sh $RASTERFORMAT/environment/templates/cmake`"
+export CDPATH="$CDPATH:$RASTERFORMAT/Sources"
+export CMAKE_MODULE_PATH="$CMAKE_MODULE_PATH;`nativePath.sh $RASTERFORMAT/Environment/Templates/cmake`"
 
