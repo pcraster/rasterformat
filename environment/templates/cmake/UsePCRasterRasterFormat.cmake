@@ -7,14 +7,13 @@ ELSE()
 ENDIF()
 
 INCLUDE_DIRECTORIES(
-  ${RASTERFORMAT_PROJECT}/Sources/PCRasterRasterFormat
+  ${RASTERFORMAT_PROJECT}/sources/pcraster_raster_format
 )
 
 FIND_LIBRARY(PCRASTER_RASTERFORMAT_LIBRARY
-  NAMES PCRasterRasterFormat
+  NAMES pcraster_raster_format
   PATHS
       ${_RASTERFORMAT_OBJECTS}/bin/${CMAKE_BUILD_TYPE}
       ${_RASTERFORMAT_OBJECTS}/bin
   NO_DEFAULT_PATH
 )
-

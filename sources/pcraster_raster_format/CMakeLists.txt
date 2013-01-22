@@ -70,6 +70,6 @@ SET(SOURCES
   vsvers.c
   wattrblk.c
 )
-ADD_LIBRARY(PCRasterRasterFormat
+ADD_LIBRARY(pcraster_raster_format
   ${SOURCES}
 )

@@ -1,0 +1,4 @@
+#vim:syntax=bash
+
+# export CDPATH="$CDPATH:$RASTERFORMAT/sources"
+export CMAKE_MODULE_PATH="$CMAKE_MODULE_PATH;`native_path_name.py $RASTERFORMAT/environment/templates/cmake`"

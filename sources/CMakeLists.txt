@@ -1,1 +1,1 @@
-ADD_SUBDIRECTORY(PCRasterRasterFormat)
+ADD_SUBDIRECTORY(pcraster_raster_format)
