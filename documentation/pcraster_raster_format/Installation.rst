@@ -16,4 +16,3 @@ Checkout/configure/build::
   $ source $RASTERFORMAT/environment/configuration/bash_profile
   $ configurecmakeproject.py release RasterFormat # Or debug.
   $ make -C $RASTERFORMAT
-
