@@ -79,6 +79,8 @@ typedef unsigned             CSF_4BYTE_INT_SIZE_SPECIFIER int  UINT4;
     // http://dbp-consulting.com/tutorials/StrictAliasing.html
     // http://ohse.de/uwe/articles/gcc-attributes.html#type-may_alias
     typedef UINT4 __attribute__((__may_alias__)) UINT4_ALIASING;
+#else
+    typedef UINT4 UINT4_ALIASING;
 #endif
 
 #undef CSF_4BYTE_INT_SIZE_SPECIFIER
