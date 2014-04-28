@@ -1,3 +1,10 @@
+SET(PUBLIC_HEADERS
+    csf.h
+    csfattr.h
+    csfimpl.h
+    csftypes.h
+    pcrtypes.h
+)
 SET(SOURCES
     _getcell.c
     _getrow.c
@@ -72,4 +79,17 @@ SET(SOURCES
 )
 ADD_LIBRARY(pcraster_raster_format
     ${SOURCES}
+)
+INSTALL(
+    TARGETS
+        pcraster_raster_format
+    ARCHIVE
+        DESTINATION
+            lib
+)
+INSTALL(
+    FILES
+        ${PUBLIC_HEADERS}
+    DESTINATION
+        include
 )
