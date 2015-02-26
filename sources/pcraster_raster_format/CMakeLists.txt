@@ -73,3 +73,8 @@ SET(SOURCES
 ADD_LIBRARY(pcraster_raster_format
     ${SOURCES}
 )
+
+# increase the warning level to match GDAL's
+if(${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wdeclaration-after-statement -ansi")
+endif()
