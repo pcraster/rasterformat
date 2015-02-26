@@ -11,10 +11,10 @@
 #define INCLUDED_STRING
 #endif
 
-/* NOTE that this files is included in the PCRaster gdal driver
- *      it account for more compiler issues than we deal with
+/* NOTE that this file is included in the PCRaster gdal driver
+ *      it accounts for more compiler issues than we deal with
  *      normally in PCRaster, such as the VC6 compiler.
- *      64 bit integer typedefs are only define for the PCRaster
+ *      64 bit integer typedefs are only defined for the PCRaster
  *      source not for the Gdal driver.
  *      The Gdal PCRaster driver defines USE_IN_GDAL, PCRaster sources
  *      do not.
@@ -155,7 +155,7 @@ template<> inline bool isMV(std::string const& string)
      // element variable in function scope (stack-based)
      // constraint the setting to memory (m)
      // for correct alignment
-     asm ("movl $-1, %[dest]" : [dest] "=m" (v));
+     asm ("movl $-1, %0" : "=m" (v));
 #   endif
   }
   template<>

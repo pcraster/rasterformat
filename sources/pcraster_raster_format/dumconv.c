@@ -27,10 +27,10 @@
  * does nothing
  */
 void CsfDummyConversion(
-	size_t  nrCells,
-	void   *buf)
+  size_t  nrCells,
+  void   *buf)
 {
-	/* nothing */
+  /* nothing */
   /* Shut up the C compiler */
   (void)nrCells;
   (void)buf;
