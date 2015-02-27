@@ -71,13 +71,14 @@ typedef unsigned             CSF_4BYTE_INT_SIZE_SPECIFIER int  UINT4;
 #endif
 
 #ifdef __GNUC__
-    // Modern versions of GCC use knowledge about strict aliasing to implement
-    // certain optimizations. We have some code that fails to comply to the
-    // strict aliasing rules (see uses of UINT_ALIASING in this header).
-    // These are simple cases that should not be optimized. Using
-    // UINT_ALIASING will prevent gcc from optimizing these expressions.
-    // http://dbp-consulting.com/tutorials/StrictAliasing.html
-    // http://ohse.de/uwe/articles/gcc-attributes.html#type-may_alias
+    /* Modern versions of GCC use knowledge about strict aliasing to implement
+     * certain optimizations. We have some code that fails to comply to the
+     * strict aliasing rules (see uses of UINT_ALIASING in this header).
+     * These are simple cases that should not be optimized. Using
+     * UINT_ALIASING will prevent gcc from optimizing these expressions.
+     * http://dbp-consulting.com/tutorials/StrictAliasing.html
+     * http://ohse.de/uwe/articles/gcc-attributes.html#type-may_alias
+     */
     typedef UINT4 __attribute__((__may_alias__)) UINT4_ALIASING;
 #else
     typedef UINT4 UINT4_ALIASING;
@@ -161,7 +162,7 @@ typedef double              REAL8; /* IEEE-754 64-bit */
 #endif
 
 /* endif probing */
-# endif 
+# endif
 
 /* endif no ENDIAN defined */
 # endif
@@ -223,7 +224,7 @@ typedef enum CSF_PT {
  */
 
 /* historical errors don't use them:
- * #define VS_NOTCLASSIFIED 2	
+ * #define VS_NOTCLASSIFIED 2
  * #define VS_CONTINUES 	 2
  *
  * NOTE new VS_* types must be different from CR_* values
@@ -367,7 +368,7 @@ typedef enum CSF_CR {
  * are NAN's
  * MV_REAL4 has the same bitpattern as a MV_UINT4
  * MV_REAL8 has the same bitpattern as two MV_UINT4's
- *          only the first 32 bits already identify a NAN, 
+ *          only the first 32 bits already identify a NAN,
  *          so that's what we test
  */
 #ifdef CPU_LITTLE_ENDIAN

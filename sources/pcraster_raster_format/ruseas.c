@@ -438,77 +438,81 @@ int RuseAs(
   CSF_VS inFileVS = RgetValueScale(m);
   int hasInFileCellReprType2 =  HasInFileCellReprType2(inFileCR);
 
+  /* it is very unconvenient that both, VS and CR are taken as arguments
+   * for this function, and previously were used in the switch statement
+   * now, at least 'special conversions' handled first
+   */
+  if((int)useType == VS_BOOLEAN){
+    switch(inFileVS) {
+      case VS_LDD:
+      case VS_DIRECTION: {
+        M_ERROR(CANT_USE_AS_BOOLEAN);
+        return 1;
+      }
+      case VS_BOOLEAN: {
+        POSTCOND(inFileCR == CR_UINT1);
+        m->appCR = CR_UINT1;
+        m->file2app = same;
+        m->app2file = same;
+        return 0;
+      }
+      default: {
+        if((!hasInFileCellReprType2) && WRITE_ENABLE(m)) {
+          /* cellrepr is old one, we can't write that */
+          M_ERROR(CANT_USE_WRITE_BOOLEAN);
+          return 1;
+        }
+        m->appCR = CR_UINT1;
+        m->file2app  = ConvFuncBool(inFileCR);
+        m->app2file = ConvFunc(inFileCR, CR_UINT1);
+        return 0;
+      }
+    }
+  }
+  else if ((int)useType == VS_LDD){
+    switch(inFileVS) {
+      case VS_LDD: {
+        POSTCOND(inFileCR == CR_UINT1);
+        m->appCR = CR_UINT1;
+        m->file2app = same;
+        m->app2file = same;
+        return 0;
+      }
+      case VS_CLASSIFIED: 
+      case VS_NOTDETERMINED: {
+        switch(inFileCR) {
+          case CR_UINT1: {
+            m->appCR = CR_UINT1;
+            m->file2app  = UINT1tLdd;
+            m->app2file = same;
+            return 0;
+          }
+          case CR_INT2: {
+            if(WRITE_ENABLE(m)) {
+              M_ERROR(CANT_USE_WRITE_LDD);
+              return 1;
+            }
+            m->appCR = CR_UINT1;
+            m->file2app  = INT2tLdd;
+            m->app2file = illegal;
+            return 0;
+          }
+          default: {
+            /* This should never happen.
+             * Shut up compiler.
+             */
+            assert(0);
+          }
+        }
+      }
+      default: {
+        M_ERROR(CANT_USE_AS_LDD);
+        return 1;
+      }
+    }
+  }
+
   switch(useType) {
-    case VS_BOOLEAN: {
-      switch(inFileVS) {
-        case VS_LDD:
-        case VS_DIRECTION: {
-          M_ERROR(CANT_USE_AS_BOOLEAN);
-          return 1;
-        }
-        case VS_BOOLEAN: {
-          POSTCOND(inFileCR == CR_UINT1);
-          m->appCR = CR_UINT1;
-          m->file2app = same;
-          m->app2file = same;
-          return 0;
-        }
-        default: {
-          if((!hasInFileCellReprType2) && WRITE_ENABLE(m)) {
-            /* cellrepr is old one, we can't write that */
-            M_ERROR(CANT_USE_WRITE_BOOLEAN);
-            return 1;
-          }
-          m->appCR = CR_UINT1;
-          m->file2app  = ConvFuncBool(inFileCR);
-          m->app2file = ConvFunc(inFileCR, CR_UINT1);
-          return 0;
-        }
-      } /* case useType == VS_BOOLEAN */
-      break;
-    }
-    case VS_LDD: {
-      switch(inFileVS) {
-        case VS_LDD: {
-          POSTCOND(inFileCR == CR_UINT1);
-          m->appCR = CR_UINT1;
-          m->file2app = same;
-          m->app2file = same;
-          return 0;
-        }
-        case VS_CLASSIFIED: 
-        case VS_NOTDETERMINED: {
-          switch(inFileCR) {
-            case CR_UINT1: {
-              m->appCR = CR_UINT1;
-              m->file2app  = UINT1tLdd;
-              m->app2file = same;
-              return 0;
-            }
-            case CR_INT2: {
-              if(WRITE_ENABLE(m)) {
-                M_ERROR(CANT_USE_WRITE_LDD);
-                return 1;
-              }
-              m->appCR = CR_UINT1;
-              m->file2app  = INT2tLdd;
-              m->app2file = illegal;
-              return 0;
-            }
-            default: {
-              // This should never happen.
-              // Shut up compiler.
-              assert(0);
-            }
-          }
-        }
-        default: {
-          M_ERROR(CANT_USE_AS_LDD);
-          return 1;
-        }
-      } /* case useType == VS_LDD */
-      break;
-    }
     case CR_UINT1:
     case CR_INT4 :
     case CR_REAL4:
