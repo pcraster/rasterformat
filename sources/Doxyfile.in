@@ -1,3 +1,0 @@
-PROJECT_NAME            = ${PROJECT_NAME}
-INPUT                   = ${CMAKE_CURRENT_SOURCE_DIR}/pcraster_raster_format
-${DOXYGEN_TEMPLATE}
