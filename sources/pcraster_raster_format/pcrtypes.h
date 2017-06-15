@@ -65,20 +65,21 @@ namespace pcr {
   \param     v the value to be tested.
   \return    True if value \a v is a missing value.
 
-    the generic isMV(const T& v) is not implemented, only the specializations
+    The generic isMV(const T& v) is not implemented, only the specializations.
 
-  \todo      Zet alle dingen met een bepaald type,isMV, setMv, isType in
-             een zgn. struct trait
-             zie cast drama als isMV mist voor INT2 in BandMapTest::Open2
-             Zie numeric_limit discussie in Josuttis
+  \todo      Put all things with a certain type, isMV, setMV, isType in
+             a so-called struct trait.
+             See cast drama when isMV is missing for INT2 in
+             BandMapTest::Open2
+             See numeric_limit discussion in Josuttis.
 */
-  template<typename T> bool isMV(const T& v);
+  template<typename T> inline bool isMV(const T& v);
 /*!
   \brief     Tests if the value pointed to by v is a missing value.
   \param     v Pointer to the value to be tested.
   \return    True if the value pointed to by v is a missing value.
 */
-  template<typename T> bool isMV(T* v) {
+  template<typename T> inline bool isMV(T* v) {
     return isMV(*v);
   }
 
@@ -121,7 +122,7 @@ template<> inline bool isMV(std::string const& string)
     \brief     Sets the value pointed to by v to a missing value.
     \param     v Pointer to the value to be set.
   */
-  template<typename T> void setMV(T *v) {
+  template<typename T> inline void setMV(T *v) {
     setMV(*v);
   }
 
@@ -190,7 +191,7 @@ inline void setMV(std::string& string)
  *   or optimize for I86, for gcc look into include/asm/string
  */
 template<typename T>
- void setMV(T *v, size_t n)
+inline void setMV(T *v, size_t n)
 {
   for(size_t i=0; i<n; i++)
       pcr::setMV(v[i]);
@@ -198,7 +199,7 @@ template<typename T>
 
  namespace detail {
    template<typename T>
-    void setMVMemSet(T *v, size_t n) {
+    inline void setMVMemSet(T *v, size_t n) {
       memset(v,MV_UINT1,n*sizeof(T));
     }
  }
