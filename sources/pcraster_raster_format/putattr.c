@@ -218,7 +218,7 @@ CSF_FADDR32 CsfSeekAttrSpace(
 		M_ERROR(WRITE_ERROR);
 		resultPos = 0;
 	}
-	if( fseek(m->fp, (long)resultPos, SEEK_SET) != 0 ) /* fsetpos() is better */
+	if( csf_fseek(m->fp, resultPos, SEEK_SET) != 0 ) /* fsetpos() is better */
         {
                 M_ERROR(WRITE_ERROR);
                 resultPos = 0;

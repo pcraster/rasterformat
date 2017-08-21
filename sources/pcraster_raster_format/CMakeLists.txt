@@ -21,6 +21,7 @@ set(SOURCES
     delattr.c
     dumconv.c
     endian.c
+    file.c
     filename.c
     gattrblk.c
     gattridx.c
