@@ -144,6 +144,12 @@ typedef double              REAL8; /* IEEE-754 64-bit */
 /* linux/gcc defines this on intel 80x86_64 platform */
 #  define CPU_LITTLE_ENDIAN
 #endif
+
+#ifdef __aarch64__
+/* ARM 64-bit platform */
+#  define CPU_LITTLE_ENDIAN
+#endif
+
 #ifdef _M_X64
 /* Mscc defines this on intel 80x86_64 platform */
 #  define CPU_LITTLE_ENDIAN
