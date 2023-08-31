@@ -102,5 +102,5 @@ set_target_properties(pcraster_raster_format PROPERTIES
 # For this target only, increase the warning level to match GDAL's
 target_compile_options(pcraster_raster_format
     PRIVATE
-        "$<$<OR:$<C_COMPILER_ID:GNU>,$<C_COMPILER_ID:Clang>>:-Wdeclaration-after-statement;-ansi;-Wall;-Wextra>"
+        "$<$<OR:$<C_COMPILER_ID:GNU>,$<C_COMPILER_ID:Clang>>:-Wall;-Wextra>"
 )
