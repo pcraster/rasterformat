@@ -110,4 +110,5 @@ set_target_properties(pcraster_raster_format
 target_compile_options(pcraster_raster_format
     PRIVATE
         "$<$<OR:$<C_COMPILER_ID:GNU>,$<C_COMPILER_ID:Clang>>:-Wall;-Wextra>"
+        "$<$<OR:$<C_COMPILER_ID:Clang>,$<C_COMPILER_ID:Clang>>:-Wcast-function-type-strict>"
 )
