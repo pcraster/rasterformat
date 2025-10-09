@@ -95,8 +95,15 @@ install(
     FILES_MATCHING PATTERN "*.h"
 )
 
-set_target_properties(pcraster_raster_format PROPERTIES
-    DEBUG_POSTFIX d
+set_target_properties(pcraster_raster_format
+    PROPERTIES
+        DEBUG_POSTFIX d
+        C_STANDARD 11
+        C_STANDARD_REQUIRED ON
+        C_EXTENSIONS OFF
+        C_VISIBILITY_PRESET hidden
+        VISIBILITY_INLINES_HIDDEN ON
+        POSITION_INDEPENDENT_CODE ON
 )
 
 # For this target only, increase the warning level to match GDAL's

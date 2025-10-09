@@ -1,11 +1,9 @@
 cmake_minimum_required(VERSION 3.24)
 
-set(CMAKE_C_STANDARD 11)
-set(CMAKE_C_STANDARD_REQUIRED ON)
-set(CMAKE_C_EXTENSIONS OFF)
-set(CMAKE_VISIBILITY_INLINES_HIDDEN 1)
-set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-
-project(RasterFormat)
+project(RasterFormat
+    LANGUAGES C
+    DESCRIPTION "PCRaster's native rasterformat library."
+    HOMEPAGE_URL "https://github.com/pcraster/rasterformat/"
+)
 
 add_subdirectory(sources)
