@@ -333,8 +333,8 @@ int MgetColourPalette(MAP *m, UINT2 *pal);
 int MgetGreyPalette(MAP *m, UINT2 *pal);
 int MputDescription(MAP *m, char *des);
 int MputHistory(MAP *m, char *history);
-int MputColourPalette(MAP *m, UINT2 *pal, size_t nrTupels);
-int MputGreyPalette(MAP *m, UINT2 *pal, size_t nrTupels);
+int MputColourPalette(MAP *m, UINT2 *pal, size_t nrTuples);
+int MputGreyPalette(MAP *m, UINT2 *pal, size_t nrTuples);
 
 int Rcoords2RowCol( const MAP *m,
   double x,   double y,
