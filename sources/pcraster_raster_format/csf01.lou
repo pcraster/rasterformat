@@ -27,7 +27,7 @@ This document describes the meaning of the fields in CSF files and the
 Application Programming Interface (API) for handling CSF files. By 
 providing an API we want to encourage the use of CSF files through the API
 instead getting at the bytes directly. This allows a layer of software (the
-API) that can deal and if neccessary fix things between different versions
+API) that can deal and if necessary fix things between different versions
 of the format.
 
 @PP
@@ -375,7 +375,7 @@ in case of an error. This value gives further information about the most
 recent error. At program initialization, Merrno is set to 0 (NO_ERROR).
 In most of the manual pages there is a section MERRNO that lists the
 possible constants set by a specific function in case of an error.
-There is no garanty that Merrno is always set in case every possible
+There is no guarantee that Merrno is always set in case every possible
 error, but many error conditions specific to using this API are checked.
 The library source code error checks are extensive in those areas where
 improper parameters could create a map that would make no sense to other
@@ -388,7 +388,7 @@ The constants are:
 @TaggedList 
 
 @DTI{@Code NOERROR}
-{No error occured.}
+{No error occurred.}
 @DTI{@Code OPENFAILED}
 {File could not be opened or does not exist}
 @DTI{@Code NOT_CSF}
@@ -518,7 +518,7 @@ speak about the @I{in-file (or file) cell representation} and the
 @I{application (or app) cell representation}. The application cell
 representation is the one set by @Code RuseAs. The file cell representation
 is returned by @Code RgetCellRepr . If @Code RuseAs is not used then the file
-and application cell representation are indentical. 
+and application cell representation are identical. 
 When calling a get (= read)
 function, the get function will read the cells and convert them to the
 application cell representation.  When calling a put (= write) function it
@@ -850,7 +850,7 @@ Contents main header:
 }
 
 At creation there is a 1 written to the byteOrder field. If an 
-@I {other endian} proccessor reads this field then the value
+@I {other endian} processor reads this field then the value
 will read 0x01000000 and knows that it has to swap the file contents.
 
 @PP
@@ -918,7 +918,7 @@ The cell representation are constructed in a similar way:
  @DTI{bit 3} {Is floating point.} 
  @DTI{bit 4-5} {@Eq{sup 2 log} of the size in bytes
  that have to be tested to determine a missing value.}
- @DTI{bit 6-7} {Test displacements on little endian (Intel) proccessors in words.}
+ @DTI{bit 6-7} {Test displacements on little endian (Intel) processors in words.}
 @EndList
 Resulting in the following id's:
 @ID @Tab

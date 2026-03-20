@@ -24,7 +24,7 @@ size_t MgetDescriptionSize(MAP *m) /* the map to get it from */
 }
 
 /* get the number of colour palette entries
- * MgetNrColourPaletteEntries returns the number of rgb tupels
+ * MgetNrColourPaletteEntries returns the number of rgb tuples
  * of the colour palette. Each tuple is a sequence of 3 UINT2
  * words describing red, green and blue.
  * returns
@@ -39,7 +39,7 @@ size_t MgetNrColourPaletteEntries(MAP *m) /* the map to get it from */
 }
 
 /* get the number of grey palette entries
- * MgetNrGreyPaletteEntries returns the number of grey tupels
+ * MgetNrGreyPaletteEntries returns the number of grey tuples
  * of the grey palette. Each tuple is one UINT2
  * words describing the intensity: low, 0 is black, high is white.
  * returns
@@ -78,7 +78,7 @@ int MgetHistory(MAP *m,    /* the map to get it from */
 }
 
 /* get the colour palette 
- * MgetColourPalette fills the pal argument with a number of rgb tupels
+ * MgetColourPalette fills the pal argument with a number of rgb tuples
  * of the colour palette. Each tuple is a sequence of 3 UINT2
  * words describing red, green and blue. Thus if the map has 8
  * colour palette entries it puts 24 UINT2 values in pal.
@@ -94,7 +94,7 @@ int MgetColourPalette(MAP *m, /* the map to get it from */
 }
 
 /* get the grey palette 
- * MgetGreyPalette fills the pal argument with a number of grey tupels
+ * MgetGreyPalette fills the pal argument with a number of grey tuples
  * of the grey palette. Each tuple is one UINT2
  * words describing the intensity: low, 0 is black, high is white.
  * returns
@@ -142,7 +142,7 @@ int MputHistory(MAP *m,    /* the map to get it from */
 
 /* put the colour palette 
  * MputColourPalette writes the pal argument that is filled 
- * with a number of rgb tupels
+ * with a number of rgb tuples
  * of the colour palette to the map. Each tuple is a sequence of 3 UINT2
  * words describing red, green and blue. Thus if the map has 8
  * colour palette entries it puts 24 UINT2 values in map palette.
@@ -153,15 +153,15 @@ int MputHistory(MAP *m,    /* the map to get it from */
  */
 int MputColourPalette(MAP *m, /* the map to get it from */
 	UINT2 *pal, /* the new palette */
-	size_t nrTupels) /* the number of 3 UINT2 words tuples of pal */
+	size_t nrTuples) /* the number of 3 UINT2 words tuples of pal */
 {
 	return CsfUpdateAttribute(m, ATTR_ID_COLOUR_PAL, sizeof(UINT2), 
-		nrTupels*3, pal);
+		nrTuples*3, pal);
 }
 
 /* put the grey palette 
  * MputColourPalette writes the pal argument that is filled 
- * with a number of grey tupels
+ * with a number of grey tuples
  * of the grey palette. Each tuple is one UINT2
  * words describing the intensity: low, 0 is black, high is white.
  * An existing grey palette is overwritten.
@@ -171,8 +171,8 @@ int MputColourPalette(MAP *m, /* the map to get it from */
  */
 int MputGreyPalette(MAP *m, /* the map to get it from */
 	UINT2 *pal, /* the new grey palette */
-	size_t nrTupels) /* the number of UINT2 words tuples of pal */
+	size_t nrTuples) /* the number of UINT2 words tuples of pal */
 {
 	return CsfUpdateAttribute(m, ATTR_ID_GREY_PAL, sizeof(UINT2), 
-		nrTupels, pal);
+		nrTuples, pal);
 }
